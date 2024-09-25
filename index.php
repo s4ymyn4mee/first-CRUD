@@ -22,7 +22,8 @@
     </div>
 </nav>
 <div class="container mt-5">
-    <h3>Заметки:
+    <h3>Список студентов:</h3>
+    <h6 class="m-3">
         <?php
         $connection_data = file("connection_data.txt", FILE_IGNORE_NEW_LINES) ?: [];
         [$servername, $db_login, $db_password, $db_name] = $connection_data;
@@ -33,19 +34,22 @@
             $db_password,
             $db_name);
 
-        $sql_query = "UPDATE `students` SET `age` = 25 WHERE `age` > 15";
+        $sql_query = "SELECT * FROM `students`";
 
-        if ($connection->query($sql_query) === TRUE) {
-            echo "Запись обновлена.";
-        } else {
-            echo "Ошибка записи.";
-        };
+        $query_result = $connection->query($sql_query)->fetch_all(MYSQLI_ASSOC);
+        //      print_r($query_result);
+        foreach ($query_result as $key => $record) {
+            print_r("<p>
+                    {$record['name']} |
+                    {$record['surname']} |
+                    {$record['age']} |</p>");
+        }
+
         $connection->close();
 
-
         ?>
-    </h3>
-    <h3>До зимней сессии осталось:
+    </h6>
+    <h3 class="mb-3 mt-4">До зимней сессии осталось:
         <?php
         const offset = 5;
         $current_time = time() + offset * 3600;
