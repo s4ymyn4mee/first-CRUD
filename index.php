@@ -24,25 +24,57 @@
 <div class="container mt-5">
     <h3>Список студентов:</h3>
     <h6 class="m-3">
+        <form action="#" method="POST">
+            <div class="row mb-4">
+                <div class="col-2">
+                    <input type="text" name="name" class="form-control" placeholder="Имя">
+                </div>
+                <div class="col-2">
+                    <input type="text" name="surname" class="form-control" placeholder="Фамилия">
+                </div>
+                <div class="col-2">
+                    <input type="text" name="age" class="form-control" placeholder="Возраст">
+                </div>
+                <div class="col">
+                    <input type="submit" name="add_student" class="btn btn-primary me-2" value="Добавить студента">
+                </div>
+            </div>
+
+
+        </form>
         <?php
         $connection_data = file("connection_data.txt", FILE_IGNORE_NEW_LINES) ?: [];
         [$servername, $db_login, $db_password, $db_name] = $connection_data;
-
         $connection = new mysqli(
             $servername,
             $db_login,
             $db_password,
             $db_name);
 
-        $sql_query = "SELECT * FROM `students`";
+        if(isset($_POST['add_student'])) {
+            $name = $_POST['name'] ?: '';
+            $surname = $_POST['surname'] ?: '';
+            $age = $_POST['age'] ?: 0;
+            $sql_query = "INSERT INTO `students`(`name`,`surname`,`age`) VALUES ('$name','$surname','$age')";
+            $connection->query($sql_query);
+            $connection->close();
+        }
 
+
+        $connection = new mysqli(
+            $servername,
+            $db_login,
+            $db_password,
+            $db_name);
+        $sql_query = "SELECT * FROM `students`";
         $query_result = $connection->query($sql_query)->fetch_all(MYSQLI_ASSOC);
-        //      print_r($query_result);
+
         foreach ($query_result as $key => $record) {
             print_r("<p>
+                    {$record['id']} |
                     {$record['name']} |
-                    {$record['surname']} |
-                    {$record['age']} |</p>");
+                    {$record['surname']} | 
+                    {$record['age']} </p>");
         }
 
         $connection->close();
