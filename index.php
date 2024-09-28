@@ -27,7 +27,7 @@
         <form action="#" method="POST">
             <div class="row mb-4">
                 <div class="col-2">
-                    <input type="text" name="name" class="form-control" placeholder="Имя">
+                    <input type="text" name="name" value="" class="form-control" placeholder="Имя">
                 </div>
                 <div class="col-2">
                     <input type="text" name="surname" class="form-control" placeholder="Фамилия">
@@ -43,7 +43,8 @@
 
         </form>
         <?php
-        $connection_data = file("connection_data.txt", FILE_IGNORE_NEW_LINES) ?: [];
+        $connection_data = file("connection_data.txt",
+            FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
         [$servername, $db_login, $db_password, $db_name] = $connection_data;
         $connection = new mysqli(
             $servername,
@@ -51,13 +52,16 @@
             $db_password,
             $db_name);
 
-        if(isset($_POST['add_student'])) {
+        if (isset($_POST['add_student'])) {
             $name = $_POST['name'] ?: '';
             $surname = $_POST['surname'] ?: '';
             $age = $_POST['age'] ?: 0;
             $sql_query = "INSERT INTO `students`(`name`,`surname`,`age`) VALUES ('$name','$surname','$age')";
             $connection->query($sql_query);
             $connection->close();
+
+            header("Location:" . $_SERVER['PHP_SELF']);
+            exit;
         }
 
 
