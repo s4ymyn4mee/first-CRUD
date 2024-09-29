@@ -25,6 +25,122 @@
     <h3>Список студентов:</h3>
     <h5 class="m-3">
         <?php
+
+        use JetBrains\PhpStorm\NoReturn;
+
+        function send_query($sql_query): mysqli_result|bool
+        {
+            global $servername, $db_login, $db_password, $db_name;
+
+            $connection = new mysqli($servername, $db_login, $db_password, $db_name);
+            $query_result = $connection->query($sql_query);
+            $connection->close();
+
+            return $query_result;
+        }
+
+        function print_invalid_data(string $name, string $surname, string $age): bool
+        {
+            if ($name == '' and $surname == '') {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Заполните имя и фамилию!</p>";
+                return true;
+            }
+
+            if ($name == '') {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Заполните имя!</p>";
+                return true;
+            }
+
+            if ($surname == '') {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Заполните фамилию!</p>";
+                return true;
+            }
+
+            if ($age == '') {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Заполните возраст!</p>";
+                return true;
+            }
+
+            if (!is_valid_word($name) and !is_valid_word($surname)) {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Имя и фамилия некорректны: допускаются только русские и английские буквы!</p>";
+                return true;
+            }
+
+            if (!is_valid_word($name)) {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Имя некорректно: допускаются только русские и английские буквы!</p>";
+                return true;
+            }
+
+            if (!is_valid_word($surname)) {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Фамилия некорректна: допускаются только русские и английские буквы!</p>";
+                return true;
+            }
+
+            if (!is_valid_age($age)) {
+                echo "<p style='font-weight: normal; font-size: smaller; color: red'>
+                      Возраст некорректен!</p>";
+                return true;
+            }
+
+            return false;
+        }
+
+        function is_valid_word(string $word): bool
+        {
+            return preg_match("&^[a-zA-Zа-яА-ЯёЁ]+$&u", $word);
+        }
+
+        function is_valid_age(string $age): bool
+        {
+            return ((int)$age >= 0) and ((int)$age <= 123);
+        }
+
+        function handle_add_student(int $next_id, string $name, string $surname, string $age): void
+        {
+
+            if (print_invalid_data($name, $surname, $age)) {
+                return;
+            }
+
+            $sql_query = "INSERT INTO `students`(`id`,`name`,`surname`,`age`) 
+                          VALUES ('$next_id','$name','$surname','$age')";
+            send_query($sql_query);
+
+            header("Location:" . $_SERVER['PHP_SELF']);
+            exit;
+        }
+
+        function handle_save_student(int $id, string $name, string $surname, string $age): void
+        {
+            if (print_invalid_data($name, $surname, $age)) {
+                return;
+            }
+
+            $sql_query = "UPDATE `students`
+                          SET `name` = '$name',`surname` = '$surname',`age` = '$age'
+                          WHERE `id` = '$id'";
+            send_query($sql_query);
+
+            header("Location:" . $_SERVER['PHP_SELF']);
+            exit;
+        }
+
+        #[NoReturn] function handle_delete_student(int $id): void
+        {
+            $sql_query = "DELETE FROM `students` WHERE `id` = '$id'";
+            send_query($sql_query);
+
+            header("Location:" . $_SERVER['PHP_SELF']);
+            exit;
+        }
+
         $name = $surname = $age = '';
         $connection_data = file("connection_data.txt",
             FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?? [];
@@ -42,20 +158,12 @@
             $next_id = 1;
         }
 
-
         if (isset($_POST['add_student'])) {
-            $name = $_POST['name'] ?? '';
-            $surname = $_POST['surname'] ?? '';
-            $age = $_POST['age'] ?? '';
+            $name = trim($_POST['name'] ?? '');
+            $surname = trim($_POST['surname'] ?? '');
+            $age = trim($_POST['age'] ?? '');
 
-            $connection = new mysqli($servername, $db_login, $db_password, $db_name);
-            $sql_query = "INSERT INTO `students`(`id`,`name`,`surname`,`age`) 
-                          VALUES ('$next_id','$name','$surname','$age')";
-            $connection->query($sql_query);
-            $connection->close();
-
-            header("Location:" . $_SERVER['PHP_SELF']);
-            exit;
+            handle_add_student($next_id, $name, $surname, $age);
         }
 
         if (isset($_GET['edit'])) {
@@ -64,40 +172,28 @@
             $surname = $all_students[$record_number]['surname'] ?? '';
             $age = $all_students[$record_number]['age'] ?? '';
             $id = $all_students[$record_number]['id'] ?? '';
-
         }
 
         if (isset($_POST['save_student'])) {
-            if ($name != $_POST['name'] or $surname != $_POST['surname'] or $age != $_POST['age']) {
-                $name = $_POST['name'] ?? '';
-                $surname = $_POST['surname'] ?? '';
-                $age = $_POST['age'] ?? 0;
-
-                $connection = new mysqli($servername, $db_login, $db_password, $db_name);
-                $sql_query = "UPDATE `students`
-                          SET `name` = '$name',`surname` = '$surname',`age` = '$age' 
-                          WHERE `id` = '$id'";
-                $connection->query($sql_query);
-                $connection->close();
+            if ($name == trim($_POST['name']) and $surname == trim($_POST['surname']) and $age == trim($_POST['age'])) {
+                header("Location:" . $_SERVER['PHP_SELF']);
+                exit;
             }
 
-            header("Location:" . $_SERVER['PHP_SELF']);
-            exit;
+            $name = trim($_POST['name'] ?? '');
+            $surname = trim($_POST['surname'] ?? '');
+            $age = trim($_POST['age'] ?? '');
+
+            handle_save_student($id, $name, $surname, $age);
         }
 
         if (isset($_POST['delete_student'])) {
-            $connection = new mysqli($servername, $db_login, $db_password, $db_name);
-            $sql_query = "DELETE FROM `students` WHERE `id` = '$id'";
-            $connection->query($sql_query);
-            $connection->close();
-
-            header("Location:" . $_SERVER['PHP_SELF']);
-            exit;
+            handle_delete_student($id);
         }
 
         ?>
         <form action="#" method="POST">
-            <div class="row mb-4">
+            <div class="row mt-3 mb-4">
                 <div class="col-2">
                     <input type="text" name="name" value="<?= $name ?>" class="form-control" placeholder="Имя">
                 </div>
